@@ -14,7 +14,44 @@ services:
         volumes:
             - 'mysql:/var/lib/mysql'
             - './vendor/laravel/sail/database/mysql/create-testing-database.sh:/docker-entrypoint-initdb.d/10-create-testing-database.sh'
+    base-es:
+        image: docker.elastic.co/elasticsearch/elasticsearch:7.10.2
+        environment:
+            - node.name=es01
+            - cluster.name=docker-cluster
+            - cluster.initial_master_nodes=es01
+            - bootstrap.memory_lock=true
+            - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+            - xpack.security.enabled=false
+        ulimits:
+            memlock:
+                soft: -1
+                hard: -1
+        deploy:
+            resources:
+                limits:
+                    memory: 1g
+        volumes:
+            - es-data:/usr/share/elasticsearch/data
+        ports:
+            - ${DEV_ES_PORT:-9201}:9200
 
+    base-rabbit:
+        build:
+            context: .
+            dockerfile: docker/images/rabbitmq/Dockerfile
+        volumes:
+            - rabbit-data:/var/lib/rabbitmq
+        ports:
+            - ${DEV_RABBIT_PORT:-15673}:15672/tcp
+
+    base-redis:
+        image: redis:4.0-alpine
+        ports:
+            - ${DEV_REDIS_PORT:-6380}:6379
 volumes:
     mysql:
         driver: local
+    es-data:
+    rabbit-data:
+
